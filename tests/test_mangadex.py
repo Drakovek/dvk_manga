@@ -1,6 +1,8 @@
 import unittest
+from dvk_archive.file.dvk import Dvk
 from dvk_manga.mangadex import get_title_id
 from dvk_manga.mangadex import get_title_info
+from dvk_manga.mangadex import get_chapters
 
 
 class TestMangadex(unittest.TestCase):
@@ -28,8 +30,10 @@ class TestMangadex(unittest.TestCase):
         # INVALID
         dvk = get_title_info("bleh")
         assert dvk.get_title() is None
+        assert dvk.get_page_url() is None
         dvk = get_title_info("90000000000")
         assert dvk.get_title() is None
+        assert dvk.get_page_url() is None
         # TITLE 1
         dvk = get_title_info("34326")
         assert dvk.get_title() == "Randomphilia"
@@ -69,3 +73,57 @@ class TestMangadex(unittest.TestCase):
         page_url = "https://mangadex.org/title/27152/jojo-s-bizarre-adventure-"
         page_url = page_url + "part-2-battle-tendency-official-colored/"
         assert dvk.get_page_url() == page_url
+
+    def test_get_links(self):
+        """
+        Tests the get_links method.
+        """
+        # INVALID
+        dvks = get_chapters()
+        assert len(dvks) == 0
+        dvk = Dvk()
+        dvks = get_chapters(dvk)
+        assert len(dvks) == 0
+        dvk.set_page_url("https://mangadex.org")
+        dvks = get_chapters(dvk)
+        assert len(dvks) == 0
+        # TITLE 1
+        title = "JoJo's Bizarre Adventure Part 2 - "
+        title = title + "Battle Tendency (Official Colored)"
+        dvk.set_title(title)
+        page_url = "https://mangadex.org/title/27152/jojo-s-bizarre-adventure-"
+        page_url = page_url + "part-2-battle-tendency-official-colored/"
+        dvk.set_page_url(page_url)
+        dvk.set_artist("Araki Hirohiko")
+        dvks = get_chapters(dvk, language="English")
+        assert len(dvks) == 69
+        title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency "
+        title = title + "(Official Colored) | Vol. 7 Ch. 69 - The Comeback"
+        assert dvks[0].get_title() == title
+        assert dvks[0].get_artists() == ["Araki Hirohiko"]
+        assert dvks[0].get_time() == "2018/01/18|19:08"
+        title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency "
+        title = title + "(Official Colored) | Vol. 4 Ch. 39 - Chasing the Red "
+        title = title + "Stone to Swizerland"
+        assert dvks[30].get_title() == title
+        assert dvks[30].get_time() == "2018/01/18|18:44"
+        title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency (Official "
+        title = title + "Colored) | Vol. 1 Ch. 1 - Joseph Joestar of New York"
+        assert dvks[68].get_title() == title
+        assert dvks[68].get_time() == "2018/01/18|16:44"
+        dvks = get_chapters(dvk, language="Italian")
+        assert len(dvks) == 26
+        title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency (Official "
+        title = title + "Colored) | Vol. 3 Ch. 26 - La maledizione delle fedi"
+        assert dvks[0].get_title() == title
+        assert dvks[0].get_time() == "2019/07/31|16:16"
+        # TITLE 2
+        dvk.set_title("Randomphilia")
+        page_url = "https://mangadex.org/title/34326/randomphilia/"
+        dvk.set_page_url(page_url)
+        dvks = get_chapters(dvk, language="English")
+        assert len(dvks) == 0
+        dvks = get_chapters(dvk, language="French")
+        assert len(dvks) == 73
+        assert dvks[0].get_title() == "Randomphilia | Ch. 73"
+        assert dvks[0].get_time() == "2019/12/05|16:45"
