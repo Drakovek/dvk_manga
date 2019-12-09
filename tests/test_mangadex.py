@@ -1,8 +1,11 @@
 import unittest
+from pathlib import Path
+from shutil import rmtree
 from dvk_archive.file.dvk import Dvk
 from dvk_manga.mangadex import get_title_id
 from dvk_manga.mangadex import get_title_info
 from dvk_manga.mangadex import get_chapters
+from dvk_manga.mangadex import get_dvks
 
 
 class TestMangadex(unittest.TestCase):
@@ -101,22 +104,30 @@ class TestMangadex(unittest.TestCase):
         title = title + "(Official Colored) | Vol. 7 Ch. 69 - The Comeback"
         assert dvks[0].get_title() == title
         assert dvks[0].get_artists() == ["Araki Hirohiko"]
+        assert dvks[0].get_page_url() == "https://mangadex.org/chapter/2140/"
+        assert dvks[0].get_id() == "2140"
         assert dvks[0].get_time() == "2018/01/18|19:08"
         title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency "
         title = title + "(Official Colored) | Vol. 4 Ch. 39 - Chasing the Red "
         title = title + "Stone to Swizerland"
         assert dvks[30].get_title() == title
         assert dvks[30].get_time() == "2018/01/18|18:44"
+        assert dvks[30].get_page_url() == "https://mangadex.org/chapter/2081/"
+        assert dvks[30].get_id() == "2081"
         title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency (Official "
         title = title + "Colored) | Vol. 1 Ch. 1 - Joseph Joestar of New York"
         assert dvks[68].get_title() == title
         assert dvks[68].get_time() == "2018/01/18|16:44"
+        assert dvks[68].get_page_url() == "https://mangadex.org/chapter/1949/"
+        assert dvks[68].get_id() == "1949"
         dvks = get_chapters(dvk, language="Italian")
         assert len(dvks) == 26
         title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency (Official "
         title = title + "Colored) | Vol. 3 Ch. 26 - La maledizione delle fedi"
         assert dvks[0].get_title() == title
         assert dvks[0].get_time() == "2019/07/31|16:16"
+        assert dvks[0].get_page_url() == "https://mangadex.org/chapter/676740/"
+        assert dvks[0].get_id() == "676740"
         # TITLE 2
         dvk.set_title("Randomphilia")
         page_url = "https://mangadex.org/title/34326/randomphilia/"
@@ -127,3 +138,40 @@ class TestMangadex(unittest.TestCase):
         assert len(dvks) == 73
         assert dvks[0].get_title() == "Randomphilia | Ch. 73"
         assert dvks[0].get_time() == "2019/12/05|16:45"
+        assert dvks[0].get_page_url() == "https://mangadex.org/chapter/761782/"
+        assert dvks[0].get_id() == "761782"
+
+    def test_get_dvks(self):
+        # CREATE DVK
+        test_dir = Path("mangadex")
+        test_dir.mkdir(exist_ok=True)
+        dvk = Dvk()
+        dvk.set_id("MDX761781-5")
+        dvk.set_title("Randomphilia | Ch. 72 | Pg. 5")
+        dvk.set_page_url("https://mangadex.org/chapter/761781/5")
+        dvk.set_artist("whatever")
+        file = test_dir.joinpath(dvk.get_filename() + ".dvk")
+        dvk.set_file(file.absolute())
+        dvk.set_media_file("unimportant.png")
+        dvk.write_dvk()
+        # CHECK TITLE
+        title_info = get_title_info("34326")
+        chapters = get_chapters(title_info, language="French")
+        dvks = get_dvks(str(test_dir.absolute()), chapters, False)
+        assert len(dvks) == 10
+        assert dvks[9].get_id() == "MDX761782-5"
+        assert dvks[9].get_title() == "Randomphilia | Ch. 73 | Pg. 5"
+        url = "https://s0.mangadex.org/data/"
+        url = url + "c7444c5668785a7a0073047ad4ac73ae/e5.jpg"
+        assert dvks[9].get_direct_url() == url
+        assert dvks[0].get_id() == "MDX761781-1"
+        assert dvks[0].get_title() == "Randomphilia | Ch. 72 | Pg. 1"
+        url = "https://s0.mangadex.org/data/"
+        url = url + "73ce5005e7a6569279af4643c49c1d4a/R1.jpg"
+        assert dvks[0].get_direct_url() == url
+        # CHECK INVALID
+        assert get_dvks(save=False) == []
+        chapters = get_chapters()
+        assert get_dvks(test_dir.absolute(), save=False) == []
+        # REMOVE TEST FILES
+        rmtree(test_dir.absolute())

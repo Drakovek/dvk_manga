@@ -1,7 +1,13 @@
 from re import compile
+from tqdm import tqdm
 from time import sleep
+from pathlib import Path
 from dvk_archive.file.dvk import Dvk
+from dvk_archive.file.dvk_handler import DvkHandler
+from dvk_archive.processing.string_processing import get_extension
 from dvk_archive.web.basic_connect import basic_connect
+from dvk_archive.web.basic_connect import download
+from dvk_archive.web.heavy_connect import HeavyConnect
 from dvk_archive.processing.html_processing import replace_escapes
 from dvk_archive.processing.list_processing import clean_list
 
@@ -126,8 +132,14 @@ def get_chapters(
             sibling = item.find_parent().find_previous_sibling(
                 "div", {"class": compile("pr-1")})
             link = sibling.find("a", {"class": "text-truncate"})
-            dvk.set_title(base_dvk.get_title() + " | " + link.get_text())
-            dvk.set_page_url("https://mangadex.org" + link["href"])
+            title = base_dvk.get_title() + " | " + link.get_text()
+            dvk.set_title(replace_escapes(title))
+            dvk.set_page_url("https://mangadex.org" + link["href"] + "/")
+            # GET ID
+            start = dvk.get_page_url().index("/chapter/") + 1
+            start = dvk.get_page_url().index("/", start) + 1
+            end = dvk.get_page_url().index("/", start)
+            dvk.set_id(dvk.get_page_url()[start:end])
             # GET TIME PUBLISHED
             sibling = sibling.find_next_sibling(
                 "div",
@@ -139,4 +151,91 @@ def get_chapters(
             return []
     if len(bs.findAll("a", {"class": "text-truncate"})) > 0:
         dvks.extend(get_chapters(base_dvk, language, page_num + 1))
+    return dvks
+
+
+def get_dvks(
+        directory_str: str = None,
+        chapters: list = None,
+        save: bool = True) -> list:
+    """
+    Returns list of Dvk objects for each page in given MangaDex chapters.
+    Downloads Dvks if specified.
+
+    Parameters:
+        directory_str: Directory to read/save from
+        chapters: List of Dvks with info from MangaDex chapters,
+                  as returned by get_chapters
+        save: Whether to download images and save Dvk objects
+
+    Returns:
+        list: List of Dvk objects for MangaDex pages
+    """
+    if directory_str is None or chapters is None or len(chapters) == 0:
+        return []
+    directory = Path(directory_str)
+    dvk_handler = DvkHandler()
+    dvk_handler.load_dvks([directory_str])
+    contains = False
+    size = dvk_handler.get_size()
+    # FIND CHAPTER TO START WITH
+    chapter_num = 0
+    while chapter_num < len(chapters):
+        c_page_url = chapters[chapter_num].get_page_url()
+        for i in range(0, size):
+            page_url = dvk_handler.get_dvk_direct(i).get_page_url()
+            contains = page_url.startswith(c_page_url)
+        if contains:
+            break
+        chapter_num = chapter_num + 1
+    if chapter_num == len(chapters):
+        chapter_num = chapter_num - 1
+    # GET DVKS
+    dvks = []
+    connect = HeavyConnect()
+    for chp in tqdm(range(chapter_num, -1, -1)):
+        page = 1
+        c_id = chapters[chp].get_id()
+        while True:
+            # FIND IMAGE URL
+            dvk = Dvk()
+            dvk.set_id("MDX" + chapters[chp].get_id() + "-" + str(page))
+            dvk.set_title(chapters[chp].get_title() + " | Pg. " + str(page))
+            dvk.set_artists(chapters[chp].get_artists())
+            dvk.set_time(chapters[chp].get_time())
+            dvk.set_web_tags(chapters[chp].get_web_tags())
+            dvk.set_description(chapters[chp].get_description())
+            dvk.set_page_url(chapters[chp].get_page_url() + str(page))
+            dvk.set_file(directory.joinpath(dvk.get_filename() + ".dvk"))
+            if not dvk_handler.contains_page_url(dvk.get_page_url()):
+                bs = connect.get_page(
+                    dvk.get_page_url(), 1,
+                    element="//img[@class='noselect nodrag cursor-pointer']")
+                if bs is None:
+                    break
+                # CHECK IF IN RIGHT CHAPTER
+                current_id = bs.find(
+                    "span", {"class": "chapter-title"})["data-chapter-id"]
+                if not current_id == c_id:
+                    break
+                # GET DIRECT IMAGE URL
+                parents = bs.findAll("div", {"data-page": str(page)})
+                ims = []
+                for parent in parents:
+                    ims.append(
+                        parent.find(
+                            "img",
+                            {"class": "noselect nodrag cursor-pointer"}))
+                if len(ims) == 0:
+                    break
+                dvk.set_direct_url(ims[0]["src"])
+                extension = get_extension(dvk.get_direct_url())
+                dvk.set_media_file(dvk.get_filename() + extension)
+                dvks.append(dvk)
+                # DOWNLOAD IF SPECIFIED
+                if save:
+                    dvk.write_dvk()
+                    download(dvk.get_direct_url(), dvk.get_media_file())
+            page = page + 1
+    connect.close_driver()
     return dvks
