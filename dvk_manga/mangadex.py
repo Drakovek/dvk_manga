@@ -1,7 +1,9 @@
+from os import getcwd
 from re import compile
 from tqdm import tqdm
 from time import sleep
 from pathlib import Path
+from argparse import ArgumentParser
 from dvk_archive.file.dvk import Dvk
 from dvk_archive.file.dvk_handler import DvkHandler
 from dvk_archive.processing.string_processing import get_extension
@@ -163,16 +165,17 @@ def get_dvks(
     Downloads Dvks if specified.
 
     Parameters:
-        directory_str: Directory to read/save from
-        chapters: List of Dvks with info from MangaDex chapters,
+        directory_str (str): Directory to read/save from
+        chapters (list): List of Dvks with info from MangaDex chapters,
                   as returned by get_chapters
-        save: Whether to download images and save Dvk objects
+        save (bool): Whether to download images and save Dvk objects
 
     Returns:
         list: List of Dvk objects for MangaDex pages
     """
     if directory_str is None or chapters is None or len(chapters) == 0:
         return []
+    print("Downloading pages:")
     directory = Path(directory_str)
     dvk_handler = DvkHandler()
     dvk_handler.load_dvks([directory_str])
@@ -239,3 +242,57 @@ def get_dvks(
             page = page + 1
     connect.close_driver()
     return dvks
+
+
+def download_mangadex(
+        url: str = None,
+        directory_str: str = None,
+        language: str = None):
+    """
+    Downloads files from MangaDex.org
+
+    Parameters:
+        url (str): MangaDex title URL
+        directory_str (str): Directory in which to save files
+        language (str): Language of files to download
+    """
+    dir = Path(directory_str)
+    if dir.is_dir():
+        id = get_title_id(url)
+        if id == "":
+            print("Invalid MangaDex.org URL")
+        else:
+            title = get_title_info(id)
+            print(title.get_title())
+            chapters = get_chapters(title, language)
+            get_dvks(str(dir.absolute()), chapters, True)
+
+
+def main():
+    parser = ArgumentParser()
+    parser.add_argument(
+        "url",
+        help="MangaDex Title URL",
+        type=str)
+    parser.add_argument(
+        "directory",
+        help="Directory in which to preform operations.",
+        nargs="?",
+        type=str,
+        default=str(getcwd()))
+    parser.add_argument(
+        "-l",
+        "--language",
+        help="Language of images to download (defaults to \"English\")",
+        nargs="?",
+        type=str,
+        default="English")
+    args = parser.parse_args()
+    url = str(args.url)
+    dir = str(Path(args.directory))
+    language = str(args.language)
+    download_mangadex(url, dir, language)
+
+
+if __name__ == "__main__":
+    main()

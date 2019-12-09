@@ -1,3 +1,6 @@
 geckodriver.log
+build*
+dist*
+dvk_manga.egg-info*
 dvk_manga/__pycache__*
 tests/__pycache__*
