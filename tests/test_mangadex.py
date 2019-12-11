@@ -77,9 +77,9 @@ class TestMangadex(unittest.TestCase):
         page_url = page_url + "part-2-battle-tendency-official-colored/"
         assert dvk.get_page_url() == page_url
 
-    def test_get_links(self):
+    def test_get_chapters(self):
         """
-        Tests the get_links method.
+        Tests the get_chapters function.
         """
         # INVALID
         dvks = get_chapters()
@@ -103,7 +103,8 @@ class TestMangadex(unittest.TestCase):
         title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency "
         title = title + "(Official Colored) | Vol. 7 Ch. 69 - The Comeback"
         assert dvks[0].get_title() == title
-        assert dvks[0].get_artists() == ["Araki Hirohiko"]
+        artists = ["Araki Hirohiko", "JoJo's Colored Adventure"]
+        assert dvks[0].get_artists() == artists
         assert dvks[0].get_page_url() == "https://mangadex.org/chapter/2140/"
         assert dvks[0].get_id() == "2140"
         assert dvks[0].get_time() == "2018/01/18|19:08"
@@ -111,12 +112,16 @@ class TestMangadex(unittest.TestCase):
         title = title + "(Official Colored) | Vol. 4 Ch. 39 - Chasing the Red "
         title = title + "Stone to Swizerland"
         assert dvks[30].get_title() == title
+        artists = ["Araki Hirohiko", "JoJo's Colored Adventure"]
+        assert dvks[30].get_artists() == artists
         assert dvks[30].get_time() == "2018/01/18|18:44"
         assert dvks[30].get_page_url() == "https://mangadex.org/chapter/2081/"
         assert dvks[30].get_id() == "2081"
         title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency (Official "
         title = title + "Colored) | Vol. 1 Ch. 1 - Joseph Joestar of New York"
         assert dvks[68].get_title() == title
+        artists = ["Araki Hirohiko", "JoJo's Colored Adventure"]
+        assert dvks[68].get_artists() == artists
         assert dvks[68].get_time() == "2018/01/18|16:44"
         assert dvks[68].get_page_url() == "https://mangadex.org/chapter/1949/"
         assert dvks[68].get_id() == "1949"
@@ -125,11 +130,13 @@ class TestMangadex(unittest.TestCase):
         title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency (Official "
         title = title + "Colored) | Vol. 3 Ch. 26 - La maledizione delle fedi"
         assert dvks[0].get_title() == title
+        assert dvks[0].get_artists() == ["Araki Hirohiko", "JoJo No Sense"]
         assert dvks[0].get_time() == "2019/07/31|16:16"
         assert dvks[0].get_page_url() == "https://mangadex.org/chapter/676740/"
         assert dvks[0].get_id() == "676740"
         # TITLE 2
         dvk.set_title("Randomphilia")
+        dvk.set_artist("Devin Bosco Le")
         page_url = "https://mangadex.org/title/34326/randomphilia/"
         dvk.set_page_url(page_url)
         dvks = get_chapters(dvk, language="English")
@@ -137,11 +144,15 @@ class TestMangadex(unittest.TestCase):
         dvks = get_chapters(dvk, language="French")
         assert len(dvks) == 73
         assert dvks[0].get_title() == "Randomphilia | Ch. 73"
+        assert dvks[0].get_artists() == ["Biru no Fukuro", "Devin Bosco Le"]
         assert dvks[0].get_time() == "2019/12/05|16:45"
         assert dvks[0].get_page_url() == "https://mangadex.org/chapter/761782/"
         assert dvks[0].get_id() == "761782"
 
     def test_get_dvks(self):
+        """
+        Tests the get_dvks function.
+        """
         # CREATE DVK
         test_dir = Path("mangadex")
         test_dir.mkdir(exist_ok=True)

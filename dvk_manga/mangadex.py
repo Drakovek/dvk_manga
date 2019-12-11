@@ -147,6 +147,15 @@ def get_chapters(
                 "div",
                 {"class": compile("order-lg-8")})
             dvk.set_time(str(sibling["title"])[0:16])
+            # GET TRANSLATION GROUP
+            authors = dvk.get_artists()
+            sibling = sibling.find_next_sibling(
+                "div",
+                {"class": compile("chapter-list-group")})
+            groups = sibling.findAll("a")
+            for group in groups:
+                authors.append(group.get_text())
+            dvk.set_artists(authors)
             # APPEND
             dvks.append(dvk)
         except (AttributeError, TypeError):
@@ -175,10 +184,10 @@ def get_dvks(
     """
     if directory_str is None or chapters is None or len(chapters) == 0:
         return []
-    print("Downloading pages:")
     directory = Path(directory_str)
     dvk_handler = DvkHandler()
     dvk_handler.load_dvks([directory_str])
+    print("Downloading pages:")
     contains = False
     size = dvk_handler.get_size()
     # FIND CHAPTER TO START WITH
