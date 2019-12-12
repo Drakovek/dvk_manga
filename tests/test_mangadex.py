@@ -8,6 +8,7 @@ from dvk_manga.mangadex import get_id_from_tag
 from dvk_manga.mangadex import get_downloaded_titles
 from dvk_manga.mangadex import get_title_info
 from dvk_manga.mangadex import get_chapters
+from dvk_manga.mangadex import get_start_chapter
 from dvk_manga.mangadex import get_dvks
 
 
@@ -90,7 +91,8 @@ class TestMangadex(unittest.TestCase):
             assert len(dvks) == 3
             for dvk in dvks:
                 file = dvk.get_file()
-                if str(file.parent.absolute()) == str(test_dir.absolute()) and str(file.name) == "dvk1.dvk":
+                if (str(file.parent.absolute()) == str(test_dir.absolute())
+                        and str(file.name) == "dvk1.dvk"):
                     test = dvk.get_web_tags()[0] == "mangadex:123"
                     break
             assert test
@@ -98,7 +100,8 @@ class TestMangadex(unittest.TestCase):
             test = False
             for dvk in dvks:
                 file = dvk.get_file()
-                if str(file.parent.absolute()) == str(test_dir.absolute()) and str(file.name) == "dvk3.dvk":
+                if (str(file.parent.absolute()) == str(test_dir.absolute())
+                        and str(file.name) == "dvk3.dvk"):
                     test = dvk.get_web_tags()[0] == "MangaDex:702"
                     break
             assert test
@@ -237,6 +240,33 @@ class TestMangadex(unittest.TestCase):
         assert dvks[0].get_page_url() == "https://mangadex.org/chapter/761782/"
         assert dvks[0].get_id() == "761782"
 
+    def test_get_start_chapter(self):
+        test_dir = Path("mangadex2")
+        try:
+            test_dir.mkdir(exist_ok=True)
+            dvk_handler = DvkHandler()
+            dvk_handler.load_dvks([str(test_dir.absolute())])
+            assert get_start_chapter(dvk_handler) == 0
+            title_info = get_title_info("34326")
+            chapters = get_chapters(title_info, language="French")
+            assert get_start_chapter(dvk_handler, chapters) == 72
+            # CREATE DVK
+            test_dir.mkdir(exist_ok=True)
+            dvk = Dvk()
+            dvk.set_id("MDX761781-5")
+            dvk.set_title("Randomphilia | Ch. 72 | Pg. 5")
+            dvk.set_page_url("https://mangadex.org/chapter/688478/1")
+            dvk.set_artist("whatever")
+            file = test_dir.joinpath(dvk.get_filename() + ".dvk")
+            dvk.set_file(file.absolute())
+            dvk.set_media_file("unimportant.png")
+            dvk.write_dvk()
+            dvk_handler.load_dvks([str(test_dir.absolute())])
+            assert get_start_chapter(dvk_handler, chapters) == 3
+            assert get_start_chapter(dvk_handler, chapters, True) == 72
+        finally:
+            rmtree(test_dir.absolute())
+
     def test_get_dvks(self):
         """
         Tests the get_dvks function.
@@ -259,7 +289,11 @@ class TestMangadex(unittest.TestCase):
             chapters = get_chapters(title_info, language="French")
             dvk_handler = DvkHandler()
             dvk_handler.load_dvks([str(test_dir.absolute())])
-            dvks = get_dvks(dvk_handler, str(test_dir.absolute()), chapters, False)
+            dvks = get_dvks(
+                dvk_handler,
+                str(test_dir.absolute()),
+                chapters,
+                False)
             assert len(dvks) == 10
             assert dvks[9].get_id() == "MDX761782-5"
             assert dvks[9].get_title() == "Randomphilia | Ch. 73 | Pg. 5"

@@ -211,11 +211,54 @@ def get_chapters(
     return dvks
 
 
+def get_start_chapter(
+        dvk_handler: DvkHandler = None,
+        chapters: list = None,
+        check_all: bool = False) -> int:
+    """
+    Returns index of the chapter to start downloading from.
+    Ignores chapters already downloaded in full.
+
+    Parameters:
+        dvk_handler (DvkHandler): DvkHandler for seeing which files
+                                  are already downloaded.
+        chapters (list): List of Dvks with info from MangaDex chapters,
+                         as returned by get_chapters
+        check_all (bool): Whether to check all chapters,
+                          not just newest chapters
+
+    Returns:
+        int:Index of chapter to start downloading
+    """
+    if chapters is None:
+        return 0
+    if check_all or dvk_handler is None:
+        return len(chapters) - 1
+    contains = False
+    size = dvk_handler.get_size()
+    # FIND CHAPTER TO START WITH
+    start_chapter = 0
+    while start_chapter < len(chapters):
+        c_page_url = chapters[start_chapter].get_page_url()
+        for i in range(0, size):
+            page_url = dvk_handler.get_dvk_direct(i).get_page_url()
+            if page_url.startswith(c_page_url):
+                contains = True
+                break
+        if contains:
+            break
+        start_chapter = start_chapter + 1
+    if start_chapter == len(chapters):
+        start_chapter = len(chapters) - 1
+    return start_chapter
+
+
 def get_dvks(
         dvk_handler: DvkHandler = None,
         directory_str: str = None,
         chapters: list = None,
-        save: bool = True) -> list:
+        save: bool = True,
+        check_all: bool = False) -> list:
     """
     Returns list of Dvk objects for each page in given MangaDex chapters.
     Downloads Dvks if specified.
@@ -227,6 +270,8 @@ def get_dvks(
         chapters (list): List of Dvks with info from MangaDex chapters,
                   as returned by get_chapters
         save (bool): Whether to download images and save Dvk objects
+        check_all (bool): Whether to check all chapters,
+                          not just newest chapters
 
     Returns:
         list: List of Dvk objects for MangaDex pages
@@ -235,26 +280,11 @@ def get_dvks(
         return []
     directory = Path(directory_str)
     print("Downloading pages:")
-    contains = False
-    size = dvk_handler.get_size()
-    # FIND CHAPTER TO START WITH
-    chapter_num = 0
-    while chapter_num < len(chapters):
-        c_page_url = chapters[chapter_num].get_page_url()
-        for i in range(0, size):
-            page_url = dvk_handler.get_dvk_direct(i).get_page_url()
-            if page_url.startswith(c_page_url):
-                contains = True
-                break
-        if contains:
-            break
-        chapter_num = chapter_num + 1
-    if chapter_num == len(chapters):
-        chapter_num = len(chapters) - 1
+    start_chapter = get_start_chapter(dvk_handler, chapters, check_all)
     # GET DVKS
     dvks = []
     connect = HeavyConnect()
-    for chp in tqdm(range(chapter_num, -1, -1)):
+    for chp in tqdm(range(start_chapter, -1, -1)):
         page = 1
         c_id = chapters[chp].get_id()
         while True:
@@ -305,7 +335,8 @@ def get_dvks(
 def download_mangadex(
         url: str = None,
         directory_str: str = None,
-        language: str = None):
+        language: str = None,
+        check_all: bool = False):
     """
     Downloads files from MangaDex.org
 
@@ -313,6 +344,8 @@ def download_mangadex(
         url (str): MangaDex title URL
         directory_str (str): Directory in which to save files
         language (str): Language of files to download
+        check_all (bool): Whether to check all chapters,
+                          not just newest chapters
     """
     dir = Path(directory_str)
     if dir.is_dir():
@@ -338,7 +371,12 @@ def download_mangadex(
                 title = get_title_info(ids[i])
                 print(title.get_title())
                 chapters = get_chapters(title, language)
-                get_dvks(dvk_handler, str(dirs[i].absolute()), chapters, True)
+                get_dvks(
+                    dvk_handler,
+                    str(dirs[i].absolute()),
+                    chapters,
+                    True,
+                    check_all)
 
 
 def main():
@@ -350,7 +388,8 @@ def main():
         type=str,
         default="")
     parser.add_argument(
-        "directory",
+        "-d",
+        "--directory",
         help="Directory in which to preform operations.",
         nargs="?",
         type=str,
@@ -362,11 +401,17 @@ def main():
         nargs="?",
         type=str,
         default="English")
+    parser.add_argument(
+        "-c",
+        "--check_all",
+        help="Checks for images in all chapters, even if already downloaded.",
+        action="store_true")
     args = parser.parse_args()
     url = str(args.url)
     dir = str(Path(args.directory))
     language = str(args.language)
-    download_mangadex(url, dir, language)
+    check_all = bool(args.check_all)
+    download_mangadex(url, dir, language, check_all)
 
 
 if __name__ == "__main__":
