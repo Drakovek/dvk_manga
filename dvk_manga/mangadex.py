@@ -325,8 +325,7 @@ def get_dvks(
                 dvks.append(dvk)
                 # DOWNLOAD IF SPECIFIED
                 if save:
-                    dvk.write_dvk()
-                    download(dvk.get_direct_url(), dvk.get_media_file())
+                    dvk.write_media()
             page = page + 1
     connect.close_driver()
     return dvks
