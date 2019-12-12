@@ -2,7 +2,10 @@ import unittest
 from pathlib import Path
 from shutil import rmtree
 from dvk_archive.file.dvk import Dvk
+from dvk_archive.file.dvk_handler import DvkHandler
 from dvk_manga.mangadex import get_title_id
+from dvk_manga.mangadex import get_id_from_tag
+from dvk_manga.mangadex import get_downloaded_titles
 from dvk_manga.mangadex import get_title_info
 from dvk_manga.mangadex import get_chapters
 from dvk_manga.mangadex import get_dvks
@@ -25,6 +28,91 @@ class TestMangadex(unittest.TestCase):
         assert get_title_id("mangadex.org/title/27152") == "27152"
         i = "www.mangadex.org/title/27153/jojo-s-bizarre-adventure"
         assert get_title_id(i) == "27153"
+
+    def test_get_id_from_tag(self):
+        """
+        Tests the get_id_from_tag function
+        """
+        assert get_id_from_tag() == ""
+        assert get_id_from_tag("Bleh") == ""
+        assert get_id_from_tag("MangaDex:") == ""
+        assert get_id_from_tag("MangaDex:137") == "137"
+        assert get_id_from_tag("Mangadex:2345") == "2345"
+        assert get_id_from_tag("mangadex:bleh") == "bleh"
+
+    def test_get_downloaded_titles(self):
+        try:
+            test_dir = Path("mangadex1")
+            test_dir.mkdir(exist_ok=True)
+            sub_dir = test_dir.joinpath("sub")
+            sub_dir.mkdir(exist_ok=True)
+            dvks = get_downloaded_titles()
+            assert dvks == []
+            dvk_handler = DvkHandler()
+            dvk_handler.load_dvks([str(test_dir.absolute())])
+            dvks = get_downloaded_titles(dvk_handler)
+            assert dvks == []
+            # DVK 1 - MANGADEX:123
+            dvk = Dvk()
+            dvk.set_file(str(test_dir.joinpath("dvk1.dvk").absolute()))
+            dvk.set_id("id")
+            dvk.set_title("dvk")
+            dvk.set_artist("artist")
+            dvk.set_page_url("https://MangaDex.org/blah")
+            dvk.set_media_file("file")
+            dvk.set_web_tags(["mangadex:123"])
+            dvk.write_dvk()
+            # DVK 2 - REPEAT MANGADEX TAG
+            dvk.set_file(str(test_dir.joinpath("dvk2.dvk").absolute()))
+            dvk.set_media_file("file")
+            dvk.write_dvk()
+            # DVK 3 - NEW MANGADEX TAG
+            dvk.set_file(str(test_dir.joinpath("dvk3.dvk").absolute()))
+            dvk.set_media_file("file")
+            dvk.set_web_tags(["MangaDex:702"])
+            dvk.write_dvk()
+            # DVK 4 - NEW MANGADEX TAG - INVALID PAGE_URL
+            dvk.set_file(str(test_dir.joinpath("dvk4.dvk").absolute()))
+            dvk.set_media_file("file")
+            dvk.set_page_url("something.com")
+            dvk.set_web_tags(["blah", "MangaDex:137"])
+            dvk.write_dvk()
+            # DVK SUB - NEW MANGADEX TAG
+            dvk.set_file(str(sub_dir.joinpath("dvk-sub.dvk").absolute()))
+            dvk.set_media_file("file")
+            dvk.set_page_url("https://MangaDex.org/blah")
+            dvk.set_web_tags(["MangaDex:29"])
+            dvk.write_dvk()
+            # CHECK DVK 1
+            dvk_handler.load_dvks([str(test_dir.absolute())])
+            dvks = get_downloaded_titles(dvk_handler)
+            test = False
+            assert len(dvks) == 3
+            for dvk in dvks:
+                file = dvk.get_file()
+                if str(file.parent.absolute()) == str(test_dir.absolute()) and str(file.name) == "dvk1.dvk":
+                    test = dvk.get_web_tags()[0] == "mangadex:123"
+                    break
+            assert test
+            # CHECK DVK 3
+            test = False
+            for dvk in dvks:
+                file = dvk.get_file()
+                if str(file.parent.absolute()) == str(test_dir.absolute()) and str(file.name) == "dvk3.dvk":
+                    test = dvk.get_web_tags()[0] == "MangaDex:702"
+                    break
+            assert test
+            # CHECK DVK SUB
+            test = False
+            for dvk in dvks:
+                file = dvk.get_file()
+                if str(file.parent.absolute()) == str(sub_dir.absolute()):
+                    test = dvk.get_web_tags()[0] == "MangaDex:29"
+                    break
+            assert test
+        finally:
+            # DELETE TEST DIRECTORY
+            rmtree(test_dir.absolute())
 
     def test_get_title_info(self):
         """
@@ -153,36 +241,40 @@ class TestMangadex(unittest.TestCase):
         """
         Tests the get_dvks function.
         """
-        # CREATE DVK
         test_dir = Path("mangadex")
-        test_dir.mkdir(exist_ok=True)
-        dvk = Dvk()
-        dvk.set_id("MDX761781-5")
-        dvk.set_title("Randomphilia | Ch. 72 | Pg. 5")
-        dvk.set_page_url("https://mangadex.org/chapter/761781/5")
-        dvk.set_artist("whatever")
-        file = test_dir.joinpath(dvk.get_filename() + ".dvk")
-        dvk.set_file(file.absolute())
-        dvk.set_media_file("unimportant.png")
-        dvk.write_dvk()
-        # CHECK TITLE
-        title_info = get_title_info("34326")
-        chapters = get_chapters(title_info, language="French")
-        dvks = get_dvks(str(test_dir.absolute()), chapters, False)
-        assert len(dvks) == 10
-        assert dvks[9].get_id() == "MDX761782-5"
-        assert dvks[9].get_title() == "Randomphilia | Ch. 73 | Pg. 5"
-        url = "https://s0.mangadex.org/data/"
-        url = url + "c7444c5668785a7a0073047ad4ac73ae/e5.jpg"
-        assert dvks[9].get_direct_url() == url
-        assert dvks[0].get_id() == "MDX761781-1"
-        assert dvks[0].get_title() == "Randomphilia | Ch. 72 | Pg. 1"
-        url = "https://s0.mangadex.org/data/"
-        url = url + "73ce5005e7a6569279af4643c49c1d4a/R1.jpg"
-        assert dvks[0].get_direct_url() == url
-        # CHECK INVALID
-        assert get_dvks(save=False) == []
-        chapters = get_chapters()
-        assert get_dvks(test_dir.absolute(), save=False) == []
-        # REMOVE TEST FILES
-        rmtree(test_dir.absolute())
+        try:
+            # CREATE DVK
+            test_dir.mkdir(exist_ok=True)
+            dvk = Dvk()
+            dvk.set_id("MDX761781-5")
+            dvk.set_title("Randomphilia | Ch. 72 | Pg. 5")
+            dvk.set_page_url("https://mangadex.org/chapter/761781/5")
+            dvk.set_artist("whatever")
+            file = test_dir.joinpath(dvk.get_filename() + ".dvk")
+            dvk.set_file(file.absolute())
+            dvk.set_media_file("unimportant.png")
+            dvk.write_dvk()
+            # CHECK TITLE
+            title_info = get_title_info("34326")
+            chapters = get_chapters(title_info, language="French")
+            dvk_handler = DvkHandler()
+            dvk_handler.load_dvks([str(test_dir.absolute())])
+            dvks = get_dvks(dvk_handler, str(test_dir.absolute()), chapters, False)
+            assert len(dvks) == 10
+            assert dvks[9].get_id() == "MDX761782-5"
+            assert dvks[9].get_title() == "Randomphilia | Ch. 73 | Pg. 5"
+            url = "https://s0.mangadex.org/data/"
+            url = url + "c7444c5668785a7a0073047ad4ac73ae/e5.jpg"
+            assert dvks[9].get_direct_url() == url
+            assert dvks[0].get_id() == "MDX761781-1"
+            assert dvks[0].get_title() == "Randomphilia | Ch. 72 | Pg. 1"
+            url = "https://s0.mangadex.org/data/"
+            url = url + "73ce5005e7a6569279af4643c49c1d4a/R1.jpg"
+            assert dvks[0].get_direct_url() == url
+            # CHECK INVALID
+            assert get_dvks(save=False) == []
+            chapters = get_chapters()
+            assert get_dvks(test_dir.absolute(), save=False) == []
+        finally:
+            # REMOVE TEST FILES
+            rmtree(test_dir.absolute())

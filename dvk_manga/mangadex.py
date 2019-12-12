@@ -39,6 +39,52 @@ def get_title_id(url: str = None) -> str:
     return str(id)
 
 
+def get_id_from_tag(tag: str = None) -> str:
+    """
+    Returns the ID number from a given MangaDex tag.
+
+    Parameters:
+        t (str): MangaDex title tag
+
+    Returns:
+        str: MangaDex title ID number
+    """
+    if tag is None or not tag.lower().startswith("mangadex:"):
+        return ""
+    return tag[len("MangaDex:"):]
+
+
+def get_downloaded_titles(dvk_handler: DvkHandler = None) -> list:
+    """
+    Returns a list of DVKs gathered from MangaDex.org for the purpose of
+    downloading new entries to partially downloaded MangaDex titles.
+
+    Parameters:
+        dvk_handler (DvkHandler): DvkHandler for loading DVK files
+
+    Returns:
+        list: List of DVKs for downloaded MangaDex titles
+    """
+    if dvk_handler is None:
+        return []
+    ids = []
+    dvks = []
+    size = dvk_handler.get_size()
+    dvk_handler.sort_dvks("a")
+    print("Finding Titles:")
+    for i in tqdm(range(0, size)):
+        url = dvk_handler.get_dvk_sorted(i).get_page_url().lower()
+        if "mangadex.org" in url:
+            tags = dvk_handler.get_dvk_sorted(i).get_web_tags()
+            for tag in tags:
+                lower_tag = tag.lower()
+                if lower_tag.startswith("mangadex:"):
+                    if lower_tag not in ids:
+                        ids.append(lower_tag)
+                        dvks.append(dvk_handler.get_dvk_sorted(i))
+    return dvks
+
+
 def get_title_info(title_num: str = None) -> Dvk:
     """
     Gets information about a MangaDex title and returns as a Dvk object.
@@ -166,6 +212,7 @@ def get_chapters(
 
 
 def get_dvks(
+        dvk_handler: DvkHandler = None,
         directory_str: str = None,
         chapters: list = None,
         save: bool = True) -> list:
@@ -174,7 +221,9 @@ def get_dvks(
     Downloads Dvks if specified.
 
     Parameters:
-        directory_str (str): Directory to read/save from
+        dvk_handler (DvkHandler): DvkHandler for seeing which files
+                                  are already downloaded.
+        directory_str (str): Directory to save into
         chapters (list): List of Dvks with info from MangaDex chapters,
                   as returned by get_chapters
         save (bool): Whether to download images and save Dvk objects
@@ -182,11 +231,9 @@ def get_dvks(
     Returns:
         list: List of Dvk objects for MangaDex pages
     """
-    if directory_str is None or chapters is None or len(chapters) == 0:
+    if (dvk_handler is None or chapters is None or len(chapters) == 0):
         return []
     directory = Path(directory_str)
-    dvk_handler = DvkHandler()
-    dvk_handler.load_dvks([directory_str])
     print("Downloading pages:")
     contains = False
     size = dvk_handler.get_size()
@@ -196,12 +243,14 @@ def get_dvks(
         c_page_url = chapters[chapter_num].get_page_url()
         for i in range(0, size):
             page_url = dvk_handler.get_dvk_direct(i).get_page_url()
-            contains = page_url.startswith(c_page_url)
+            if page_url.startswith(c_page_url):
+                contains = True
+                break
         if contains:
             break
         chapter_num = chapter_num + 1
     if chapter_num == len(chapters):
-        chapter_num = chapter_num - 1
+        chapter_num = len(chapters) - 1
     # GET DVKS
     dvks = []
     connect = HeavyConnect()
@@ -267,14 +316,29 @@ def download_mangadex(
     """
     dir = Path(directory_str)
     if dir.is_dir():
-        id = get_title_id(url)
-        if id == "":
-            print("Invalid MangaDex.org URL")
+        dvk_handler = DvkHandler()
+        dvk_handler.load_dvks([str(dir.absolute())])
+        ids = []
+        dirs = []
+        if url == "":
+            dvks = get_downloaded_titles(dvk_handler)
+            for dvk in dvks:
+                for tag in dvk.get_web_tags():
+                    if tag.lower().startswith("mangadex:"):
+                        ids.append(get_id_from_tag(tag))
+                        dirs.append(dvk.get_file().parent)
+                        break
         else:
-            title = get_title_info(id)
-            print(title.get_title())
-            chapters = get_chapters(title, language)
-            get_dvks(str(dir.absolute()), chapters, True)
+            ids = [get_title_id(url)]
+            dirs = [dir]
+        for i in range(0, len(ids)):
+            if ids[i] == "":
+                print("Invalid MangaDex.org URL")
+            else:
+                title = get_title_info(ids[i])
+                print(title.get_title())
+                chapters = get_chapters(title, language)
+                get_dvks(dvk_handler, str(dirs[i].absolute()), chapters, True)
 
 
 def main():
@@ -282,7 +346,9 @@ def main():
     parser.add_argument(
         "url",
         help="MangaDex Title URL",
-        type=str)
+        nargs="?",
+        type=str,
+        default="")
     parser.add_argument(
         "directory",
         help="Directory in which to preform operations.",
