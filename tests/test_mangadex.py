@@ -272,9 +272,9 @@ class TestMangadex(unittest.TestCase):
         Tests the get_dvks function.
         """
         test_dir = Path("mangadex")
+        test_dir.mkdir(exist_ok=True)
         try:
             # CREATE DVK
-            test_dir.mkdir(exist_ok=True)
             dvk = Dvk()
             dvk.set_id("MDX761781-5")
             dvk.set_title("Randomphilia | Ch. 72 | Pg. 5")
@@ -289,9 +289,9 @@ class TestMangadex(unittest.TestCase):
             chapters = get_chapters(title_info, language="French")
             dvk_handler = DvkHandler()
             dvk_handler.load_dvks([str(test_dir.absolute())])
+            assert len(dvk_handler.get_paths()) == 1
             dvks = get_dvks(
                 dvk_handler,
-                str(test_dir.absolute()),
                 chapters,
                 False)
             assert len(dvks) == 10
@@ -308,7 +308,8 @@ class TestMangadex(unittest.TestCase):
             # CHECK INVALID
             assert get_dvks(save=False) == []
             chapters = get_chapters()
-            assert get_dvks(test_dir.absolute(), save=False) == []
+            dvk_handler = DvkHandler()
+            assert get_dvks(dvk_handler, save=False) == []
         finally:
             # REMOVE TEST FILES
             rmtree(test_dir.absolute())

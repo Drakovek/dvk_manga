@@ -8,7 +8,6 @@ from dvk_archive.file.dvk import Dvk
 from dvk_archive.file.dvk_handler import DvkHandler
 from dvk_archive.processing.string_processing import get_extension
 from dvk_archive.web.basic_connect import basic_connect
-from dvk_archive.web.basic_connect import download
 from dvk_archive.web.heavy_connect import HeavyConnect
 from dvk_archive.processing.html_processing import replace_escapes
 from dvk_archive.processing.list_processing import clean_list
@@ -255,7 +254,6 @@ def get_start_chapter(
 
 def get_dvks(
         dvk_handler: DvkHandler = None,
-        directory_str: str = None,
         chapters: list = None,
         save: bool = True,
         check_all: bool = False) -> list:
@@ -266,7 +264,6 @@ def get_dvks(
     Parameters:
         dvk_handler (DvkHandler): DvkHandler for seeing which files
                                   are already downloaded.
-        directory_str (str): Directory to save into
         chapters (list): List of Dvks with info from MangaDex chapters,
                   as returned by get_chapters
         save (bool): Whether to download images and save Dvk objects
@@ -276,9 +273,12 @@ def get_dvks(
     Returns:
         list: List of Dvk objects for MangaDex pages
     """
-    if (dvk_handler is None or chapters is None or len(chapters) == 0):
+    if (dvk_handler is None
+            or len(dvk_handler.get_paths()) < 1
+            or chapters is None
+            or len(chapters) == 0):
         return []
-    directory = Path(directory_str)
+    directory = dvk_handler.get_paths()[0]
     print("Downloading pages:")
     start_chapter = get_start_chapter(dvk_handler, chapters, check_all)
     # GET DVKS
@@ -372,7 +372,6 @@ def download_mangadex(
                 chapters = get_chapters(title, language)
                 get_dvks(
                     dvk_handler,
-                    str(dirs[i].absolute()),
                     chapters,
                     True,
                     check_all)
