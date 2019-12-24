@@ -136,10 +136,10 @@ class TestMangadex(unittest.TestCase):
             "Mangadex:34326", "Shounen", "4-Koma", "Full Color", "Long Strip",
             "Official Colored", "Web Comic", "Comedy", "Slice of Life"]
         assert dvk.get_web_tags() == tags
-        desc = "English :&#10;A world where logic does not exist and anything "
+        desc = "English :<br/>A world where logic does not exist and anything "
         desc = desc + "is possible. The only limit is your imagination. "
         desc = desc + "Bite-sized comics with dry humor for the broken souls."
-        desc = desc + "&#10;&#10;Un monde o&#249; la logique n&#8217;existe "
+        desc = desc + "<br/><br/>Un monde o&#249; la logique n&#8217;existe "
         desc = desc + "pas et o&#249; tout est possible. La seule limite est "
         desc = desc + "votre imagination. Des bandes dessin&#233;es mordues."
         assert dvk.get_description() == desc
@@ -156,13 +156,13 @@ class TestMangadex(unittest.TestCase):
             "Action", "Adventure", "Comedy", "Drama", "Historical", "Horror",
             "Mystery", "Martial Arts", "Supernatural", "Vampires"]
         assert dvk.get_web_tags() == tags
-        desc = "Second story arc of JoJo no Kimyou na Bouken series.&#10;&#10;"
-        desc = desc + "Takes place in the 1930s, and follows the "
-        desc = desc + "misadventures of Joseph Joestar, the grandson of "
-        desc = desc + "Jonathan Joestar, as he fights vampires and ancient "
-        desc = desc + "super beings with some help from a cybernetically-"
-        desc = desc + "enhanced Nazi and an Italian man he has a lot in "
-        desc = desc + "common with."
+        desc = "Second story arc of JoJo no Kimyou na Bouken series.<br/><br/>"
+        desc = desc + "Takes place in the 1930s, and follows the misadventures"
+        desc = desc + " of Joseph Joestar, the grandson of Jonathan Joestar, "
+        desc = desc + "as he fights vampires and ancient super beings with "
+        desc = desc + "some help from a cybernetically-enhanced Nazi and an "
+        desc = desc + "Italian man he has a lot in common with."
+        print(dvk.get_description())
         assert dvk.get_description() == desc
         page_url = "https://mangadex.org/title/27152/jojo-s-bizarre-adventure-"
         page_url = page_url + "part-2-battle-tendency-official-colored/"
@@ -233,12 +233,12 @@ class TestMangadex(unittest.TestCase):
         dvks = get_chapters(dvk, language="English")
         assert len(dvks) == 0
         dvks = get_chapters(dvk, language="French")
-        assert len(dvks) == 73
-        assert dvks[0].get_title() == "Randomphilia | Ch. 73"
+        assert len(dvks) == 75
+        assert dvks[0].get_title() == "Randomphilia | Ch. 75"
         assert dvks[0].get_artists() == ["Biru no Fukuro", "Devin Bosco Le"]
-        assert dvks[0].get_time() == "2019/12/05|16:45"
-        assert dvks[0].get_page_url() == "https://mangadex.org/chapter/761782/"
-        assert dvks[0].get_id() == "761782"
+        assert dvks[0].get_time() == "2019/12/21|15:03"
+        assert dvks[0].get_page_url() == "https://mangadex.org/chapter/770792/"
+        assert dvks[0].get_id() == "770792"
 
     def test_get_start_chapter(self):
         test_dir = Path("mangadex2")
@@ -249,7 +249,7 @@ class TestMangadex(unittest.TestCase):
             assert get_start_chapter(dvk_handler) == 0
             title_info = get_title_info("34326")
             chapters = get_chapters(title_info, language="French")
-            assert get_start_chapter(dvk_handler, chapters) == 72
+            assert get_start_chapter(dvk_handler, chapters) == 74
             # CREATE DVK
             test_dir.mkdir(exist_ok=True)
             dvk = Dvk()
@@ -262,8 +262,8 @@ class TestMangadex(unittest.TestCase):
             dvk.set_media_file("unimportant.png")
             dvk.write_dvk()
             dvk_handler.load_dvks([str(test_dir.absolute())])
-            assert get_start_chapter(dvk_handler, chapters) == 3
-            assert get_start_chapter(dvk_handler, chapters, True) == 72
+            assert get_start_chapter(dvk_handler, chapters) == 5
+            assert get_start_chapter(dvk_handler, chapters, True) == 74
         finally:
             rmtree(test_dir.absolute())
 
@@ -276,9 +276,9 @@ class TestMangadex(unittest.TestCase):
         try:
             # CREATE DVK
             dvk = Dvk()
-            dvk.set_id("MDX761781-5")
-            dvk.set_title("Randomphilia | Ch. 72 | Pg. 5")
-            dvk.set_page_url("https://mangadex.org/chapter/761781/5")
+            dvk.set_id("MDX770791-3")
+            dvk.set_title("Randomphilia | Ch. 74 | Pg. 3")
+            dvk.set_page_url("https://mangadex.org/chapter/770791/3")
             dvk.set_artist("whatever")
             file = test_dir.joinpath(dvk.get_filename() + ".dvk")
             dvk.set_file(file.absolute())
@@ -294,16 +294,16 @@ class TestMangadex(unittest.TestCase):
                 dvk_handler,
                 chapters,
                 False)
-            assert len(dvks) == 10
-            assert dvks[9].get_id() == "MDX761782-5"
-            assert dvks[9].get_title() == "Randomphilia | Ch. 73 | Pg. 5"
+            assert len(dvks) == 9
+            assert dvks[8].get_id() == "MDX770792-4"
+            assert dvks[8].get_title() == "Randomphilia | Ch. 75 | Pg. 4"
             url = "https://s0.mangadex.org/data/"
-            url = url + "c7444c5668785a7a0073047ad4ac73ae/e5.jpg"
-            assert dvks[9].get_direct_url() == url
-            assert dvks[0].get_id() == "MDX761781-1"
-            assert dvks[0].get_title() == "Randomphilia | Ch. 72 | Pg. 1"
+            url = url + "2d60025d419442a4d56d58a7bbcdc6db/M4.jpg"
+            assert dvks[8].get_direct_url() == url
+            assert dvks[0].get_id() == "MDX770791-1"
+            assert dvks[0].get_title() == "Randomphilia | Ch. 74 | Pg. 1"
             url = "https://s0.mangadex.org/data/"
-            url = url + "73ce5005e7a6569279af4643c49c1d4a/R1.jpg"
+            url = url + "dedabbdba2b1b69f76f299ee748402f8/k1.jpg"
             assert dvks[0].get_direct_url() == url
             # CHECK INVALID
             assert get_dvks(save=False) == []

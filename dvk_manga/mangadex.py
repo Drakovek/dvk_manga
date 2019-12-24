@@ -8,6 +8,7 @@ from dvk_archive.file.dvk import Dvk
 from dvk_archive.file.dvk_handler import DvkHandler
 from dvk_archive.processing.string_processing import get_extension
 from dvk_archive.web.basic_connect import basic_connect
+from dvk_archive.web.basic_connect import remove_header_footer
 from dvk_archive.web.heavy_connect import HeavyConnect
 from dvk_archive.processing.html_processing import replace_escapes
 from dvk_archive.processing.list_processing import clean_list
@@ -123,7 +124,7 @@ def get_title_info(title_num: str = None) -> Dvk:
         for item in bs_list:
             if item.get_text() == "Description:":
                 sibling = item.find_next_sibling("div")
-                dvk.set_description(sibling.get_text())
+                dvk.set_description(remove_header_footer(str(sibling)))
                 break
         # GET PAGE
         regex = "/title/" + title_num + "/"
