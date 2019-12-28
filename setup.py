@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="dvk-manga",
-    version="0.2.0",
+    version="0.2.1",
     author="Drakovek",
     author_email="DrakovekMail@gmail.com",
     description="Modules for downloading manga in the .dvk file format.",

@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 from dvk_archive.file.dvk import Dvk
 from dvk_archive.file.dvk_handler import DvkHandler
 from dvk_archive.processing.string_processing import get_extension
-from dvk_archive.web.basic_connect import basic_connect
+from dvk_archive.web.basic_connect import bs_connect
 from dvk_archive.web.basic_connect import remove_header_footer
 from dvk_archive.web.heavy_connect import HeavyConnect
 from dvk_archive.processing.html_processing import replace_escapes
@@ -99,7 +99,7 @@ def get_title_info(title_num: str = None) -> Dvk:
     dvk = Dvk()
     dvk.set_page_url("https://mangadex.org/title/" + title_num + "/")
     print("Finding Chapters...")
-    bs = basic_connect(dvk.get_page_url())
+    bs = bs_connect(dvk.get_page_url())
     sleep(1)
     try:
         # GET TITLE
@@ -163,7 +163,7 @@ def get_chapters(
     dvks = []
     if base_dvk is None or base_dvk.page_url is None:
         return dvks
-    bs = basic_connect(base_dvk.get_page_url() + "chapters/" + str(page_num))
+    bs = bs_connect(base_dvk.get_page_url() + "chapters/" + str(page_num))
     sleep(1)
     try:
         bs_list = bs.findAll("span", {"title": language})
