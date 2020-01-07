@@ -46,8 +46,9 @@ class TestMangadex():
         assert get_chapter_id("www.mangadex.cc/title/invalid/") == ""
         assert get_chapter_id("mangadex.cc/title/27152") == ""
         url = "https://mangadex.cc/chapter/770792/3"
-        assert get_chapter_id(url) == "770792"
-        assert get_chapter_id("https://mangadex.org/chapter/2140/1") == "2140"
+        assert get_chapter_id(url) == "/chapter/770792/3"
+        url = "https://mangadex.org/chapter/2140/1"
+        assert get_chapter_id(url) == "/chapter/2140/1"
 
     def test_get_title_id(self):
         """
@@ -311,7 +312,7 @@ class TestMangadex():
             dvk = Dvk()
             dvk.set_id("MDX770791-3")
             dvk.set_title("Randomphilia | Ch. 74 | Pg. 3")
-            dvk.set_page_url("https://mangadex.cc/chapter/770791/3")
+            dvk.set_page_url("https://mangadex.org/chapter/770791/3")
             dvk.set_artist("whatever")
             file = test_dir.joinpath(dvk.get_filename() + ".dvk")
             dvk.set_file(file.absolute())

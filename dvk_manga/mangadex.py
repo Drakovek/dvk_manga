@@ -51,16 +51,8 @@ def get_chapter_id(url: str = None) -> str:
     """
     if url is None or "mangadex." not in url or "/chapter/" not in url:
         return ""
-    start = url.index("/chapter/") + 1
-    start = url.index("/", start) + 1
-    try:
-        end = url.index("/", start)
-    except ValueError:
-        end = len(url)
-    try:
-        id = int(url[start:end])
-    except ValueError:
-        return ""
+    start = url.index("/chapter/")
+    id = url[start:]
     return str(id)
 
 
@@ -268,7 +260,7 @@ def get_start_chapter(
         for i in range(0, size):
             page_id = dvk_handler.get_dvk_direct(i).get_page_url()
             page_id = get_chapter_id(page_id)
-            if page_id is not None and page_id == c_page_id:
+            if page_id is not None and page_id.startswith(c_page_id):
                 contains = True
                 break
         if contains:
@@ -325,7 +317,17 @@ def get_dvks(
             dvk.set_description(chapters[chp].get_description())
             dvk.set_page_url(chapters[chp].get_page_url() + str(page))
             dvk.set_file(directory.joinpath(dvk.get_filename() + ".dvk"))
-            if not dvk_handler.contains_page_url(dvk.get_page_url()):
+            contains = False
+            chapter_id = get_chapter_id(dvk.get_page_url())
+            size = dvk_handler.get_size()
+            for i in range(0, size):
+                page_sect = dvk_handler.get_dvk_direct(i).get_page_url()
+                if "/mangadex." in page_sect:
+                    page_sect = page_sect[len(page_sect) - len(chapter_id):]
+                    if page_sect == chapter_id:
+                        contains = True
+                        break
+            if not contains:
                 bs = connect.get_page(
                     dvk.get_page_url(), 1,
                     element="//img[@class='noselect nodrag cursor-pointer']")
