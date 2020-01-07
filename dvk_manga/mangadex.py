@@ -24,7 +24,7 @@ def get_title_id(url: str = None) -> str:
     Returns:
         str: MangaDex title ID number
     """
-    if url is None or "mangadex.org/title/" not in url:
+    if url is None or "mangadex." not in url or "/title/" not in url:
         return ""
     start = url.index("/title/") + 1
     start = url.index("/", start) + 1
@@ -56,7 +56,7 @@ def get_id_from_tag(tag: str = None) -> str:
 
 def get_downloaded_titles(dvk_handler: DvkHandler = None) -> list:
     """
-    Returns a list of DVKs gathered from MangaDex.org for the purpose of
+    Returns a list of DVKs gathered from MangaDex.cc for the purpose of
     downloading new entries to partially downloaded MangaDex titles.
 
     Parameters:
@@ -74,7 +74,7 @@ def get_downloaded_titles(dvk_handler: DvkHandler = None) -> list:
     print("Finding Titles:")
     for i in tqdm(range(0, size)):
         url = dvk_handler.get_dvk_sorted(i).get_page_url().lower()
-        if "mangadex.org" in url:
+        if "/mangadex." in url:
             tags = dvk_handler.get_dvk_sorted(i).get_web_tags()
             for tag in tags:
                 lower_tag = tag.lower()
@@ -97,7 +97,7 @@ def get_title_info(title_num: str = None) -> Dvk:
         Dvk: Dvk holding MangaDex title information
     """
     dvk = Dvk()
-    dvk.set_page_url("https://mangadex.org/title/" + title_num + "/")
+    dvk.set_page_url("https://mangadex.cc/title/" + title_num + "/")
     print("Finding Chapters...")
     bs = bs_connect(dvk.get_page_url())
     sleep(1)
@@ -134,7 +134,7 @@ def get_title_info(title_num: str = None) -> Dvk:
             start = url.index("/" + title_num + "/") + 1
             start = url.index("/", start) + 1
             end = url.index("/", start)
-            page_url = "https://mangadex.org/title/"
+            page_url = "https://mangadex.cc/title/"
             page_url = page_url + title_num + "/" + url[start:end] + "/"
             dvk.set_page_url(page_url)
     except AttributeError:
@@ -182,7 +182,7 @@ def get_chapters(
             link = sibling.find("a", {"class": "text-truncate"})
             title = base_dvk.get_title() + " | " + link.get_text()
             dvk.set_title(replace_escapes(title))
-            dvk.set_page_url("https://mangadex.org" + link["href"] + "/")
+            dvk.set_page_url("https://mangadex.cc" + link["href"] + "/")
             # GET ID
             start = dvk.get_page_url().index("/chapter/") + 1
             start = dvk.get_page_url().index("/", start) + 1
@@ -338,7 +338,7 @@ def download_mangadex(
         language: str = None,
         check_all: bool = False):
     """
-    Downloads files from MangaDex.org
+    Downloads files from MangaDex.cc
 
     Parameters:
         url (str): MangaDex title URL
@@ -366,7 +366,7 @@ def download_mangadex(
             dirs = [dir]
         for i in range(0, len(ids)):
             if ids[i] == "":
-                print("Invalid MangaDex.org URL")
+                print("Invalid MangaDex.cc URL")
             else:
                 title = get_title_info(ids[i])
                 print(title.get_title())
