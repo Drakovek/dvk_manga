@@ -39,6 +39,31 @@ def get_title_id(url: str = None) -> str:
     return str(id)
 
 
+def get_chapter_id(url: str = None) -> str:
+    """
+    Returns the ID number from a given MangaDex chapter URL.
+
+    Parameters:
+        url (str): MangaDex chapter URL
+
+    Returns:
+        str: MangaDex chapter ID number
+    """
+    if url is None or "mangadex." not in url or "/chapter/" not in url:
+        return ""
+    start = url.index("/chapter/") + 1
+    start = url.index("/", start) + 1
+    try:
+        end = url.index("/", start)
+    except ValueError:
+        end = len(url)
+    try:
+        id = int(url[start:end])
+    except ValueError:
+        return ""
+    return str(id)
+
+
 def get_id_from_tag(tag: str = None) -> str:
     """
     Returns the ID number from a given MangaDex tag.
@@ -239,10 +264,11 @@ def get_start_chapter(
     # FIND CHAPTER TO START WITH
     start_chapter = 0
     while start_chapter < len(chapters):
-        c_page_url = chapters[start_chapter].get_page_url()
+        c_page_id = get_chapter_id(chapters[start_chapter].get_page_url())
         for i in range(0, size):
-            page_url = dvk_handler.get_dvk_direct(i).get_page_url()
-            if page_url.startswith(c_page_url):
+            page_id = dvk_handler.get_dvk_direct(i).get_page_url()
+            page_id = get_chapter_id(page_id)
+            if page_id is not None and page_id == c_page_id:
                 contains = True
                 break
         if contains:

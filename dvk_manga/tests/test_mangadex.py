@@ -4,6 +4,7 @@ from traceback import print_exc
 from dvk_archive.file.dvk import Dvk
 from dvk_archive.file.dvk_handler import DvkHandler
 from dvk_manga.mangadex import get_title_id
+from dvk_manga.mangadex import get_chapter_id
 from dvk_manga.mangadex import get_id_from_tag
 from dvk_manga.mangadex import get_downloaded_titles
 from dvk_manga.mangadex import get_title_info
@@ -23,6 +24,7 @@ class TestMangadex():
         """
         try:
             self.test_get_title_id()
+            self.test_get_chapter_id()
             self.test_get_id_from_tag()
             self.test_get_downloaded_titles()
             self.test_get_title_info()
@@ -33,6 +35,19 @@ class TestMangadex():
         except AssertionError:
             print("\033[31mCheck failed:\033[0m")
             print_exc()
+
+    def test_get_chapter_id(self):
+        """
+        Tests the get_chapter_id function.
+        """
+        assert get_chapter_id() == ""
+        assert get_chapter_id("www.differentsite.com") == ""
+        assert get_chapter_id("www.mangadex.cc/nope/27153/") == ""
+        assert get_chapter_id("www.mangadex.cc/title/invalid/") == ""
+        assert get_chapter_id("mangadex.cc/title/27152") == ""
+        url = "https://mangadex.cc/chapter/770792/3"
+        assert get_chapter_id(url) == "770792"
+        assert get_chapter_id("https://mangadex.org/chapter/2140/1") == "2140"
 
     def test_get_title_id(self):
         """
@@ -152,7 +167,13 @@ class TestMangadex():
             "Mangadex:34326", "Shounen", "4-Koma", "Full Color", "Long Strip",
             "Official Colored", "Web Comic", "Comedy", "Slice of Life"]
         assert dvk.get_web_tags() == tags
-        desc = "English :<br/>&#13;A world where logic does not exist and anything is possible. The only limit is your imagination. Bite-sized comics with dry humor for the broken souls.<br/><br/>&#13;Un monde o&#249; la logique n&#8217;existe pas et o&#249; tout est possible. La seule limite est votre imagination. Des bandes dessin&#233;es mordues."
+        desc = "English :<br/>&#13;A world where logic does not exist and "
+        desc = desc + "anything is possible. The only limit is your "
+        desc = desc + "imagination. Bite-sized comics with dry humor for the "
+        desc = desc + "broken souls.<br/><br/>&#13;Un monde o&#249; la logique"
+        desc = desc + " n&#8217;existe pas et o&#249; tout est possible. La "
+        desc = desc + "seule limite est votre imagination. Des bandes "
+        desc = desc + "dessin&#233;es mordues."
         assert dvk.get_description() == desc
         page_url = "https://mangadex.cc/title/34326/randomphilia/"
         assert dvk.get_page_url() == page_url
@@ -167,7 +188,13 @@ class TestMangadex():
             "Action", "Adventure", "Comedy", "Drama", "Historical", "Horror",
             "Mystery", "Martial Arts", "Supernatural", "Vampires"]
         assert dvk.get_web_tags() == tags
-        desc = "Second story arc of JoJo no Kimyou na Bouken series.<br/><br/>&#13;Takes place in the 1930s, and follows the misadventures of Joseph Joestar, the grandson of Jonathan Joestar, as he fights vampires and ancient super beings with some help from a cybernetically-enhanced Nazi and an Italian man he has a lot in common with."
+        desc = "Second story arc of JoJo no Kimyou na Bouken series.<br/><br/>"
+        desc = desc + "&#13;Takes place in the 1930s, and follows the "
+        desc = desc + "misadventures of Joseph Joestar, the grandson of "
+        desc = desc + "Jonathan Joestar, as he fights vampires and ancient "
+        desc = desc + "super beings with some help from a cybernetically-"
+        desc = desc + "enhanced Nazi and an Italian man he has a lot in "
+        desc = desc + "common with."
         assert dvk.get_description() == desc
         page_url = "https://mangadex.cc/title/27152/jojo-s-bizarre-adventure-"
         page_url = page_url + "part-2-battle-tendency-official-colored/"
@@ -196,21 +223,25 @@ class TestMangadex():
         dvk.set_artist("Araki Hirohiko")
         dvks = get_chapters(dvk, language="English")
         assert len(dvks) == 69
-        title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency (Official Colored) | Vol. 7 Ch. 69  - The Comeback"
+        title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency "
+        title = title + "(Official Colored) | Vol. 7 Ch. 69  - The Comeback"
         assert dvks[0].get_title() == title
         artists = ["Araki Hirohiko", "JoJo's Colored Adventure"]
         assert dvks[0].get_artists() == artists
         assert dvks[0].get_page_url() == "https://mangadex.cc/chapter/2140/"
         assert dvks[0].get_id() == "2140"
         assert dvks[0].get_time() == "2018/01/18|19:08"
-        title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency (Official Colored) | Vol. 4 Ch. 39  - Chasing the Red Stone to Swizerland"
+        title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency "
+        title = title + "(Official Colored) | Vol. 4 Ch. 39  - Chasing the "
+        title = title + "Red Stone to Swizerland"
         assert dvks[30].get_title() == title
         artists = ["Araki Hirohiko", "JoJo's Colored Adventure"]
         assert dvks[30].get_artists() == artists
         assert dvks[30].get_time() == "2018/01/18|18:44"
         assert dvks[30].get_page_url() == "https://mangadex.cc/chapter/2081/"
         assert dvks[30].get_id() == "2081"
-        title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency (Official Colored) | Vol. 1 Ch. 1  - Joseph Joestar of New York"
+        title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency (Official C"
+        title = title + "olored) | Vol. 1 Ch. 1  - Joseph Joestar of New York"
         assert dvks[68].get_title() == title
         artists = ["Araki Hirohiko", "JoJo's Colored Adventure"]
         assert dvks[68].get_artists() == artists
@@ -219,7 +250,8 @@ class TestMangadex():
         assert dvks[68].get_id() == "1949"
         dvks = get_chapters(dvk, language="Italian")
         assert len(dvks) == 26
-        title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency (Official Colored) | Vol. 3 Ch. 26  - La maledizione delle fedi"
+        title = "JoJo's Bizarre Adventure Part 2 - Battle Tendency (Official C"
+        title = title + "olored) | Vol. 3 Ch. 26  - La maledizione delle fedi"
         assert dvks[0].get_title() == title
         assert dvks[0].get_artists() == ["Araki Hirohiko", "JoJo No Sense"]
         assert dvks[0].get_time() == "2019/07/31|16:16"
@@ -298,11 +330,13 @@ class TestMangadex():
             assert len(dvks) == 9
             assert dvks[8].get_id() == "MDX770792-4"
             assert dvks[8].get_title() == "Randomphilia | Ch. 75 | Pg. 4"
-            url = "https://s5.mangadex.org/data/2d60025d419442a4d56d58a7bbcdc6db/M4.jpg"
+            url = "https://s5.mangadex.org/data/2d60025d419442a4d56d58a"
+            url = url + "7bbcdc6db/M4.jpg"
             assert dvks[8].get_direct_url() == url
             assert dvks[0].get_id() == "MDX770791-1"
             assert dvks[0].get_title() == "Randomphilia | Ch. 74 | Pg. 1"
-            url = "https://s5.mangadex.org/data/dedabbdba2b1b69f76f299ee748402f8/k1.jpg"
+            url = "https://s5.mangadex.org/data/dedabbdba2b1b69f76f299ee7"
+            url = url + "48402f8/k1.jpg"
             assert dvks[0].get_direct_url() == url
             # CHECK INVALID
             assert get_dvks(save=False) == []
