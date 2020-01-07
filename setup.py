@@ -1,14 +1,15 @@
 import setuptools
 
 console_scripts = [
-    "dvk-mangadex = dvk_manga.mangadex:main"]
+    "dvk-mangadex = dvk_manga.mangadex:main",
+    "dvk-manga-test = dvk_manga.tests.test_mangadex:main"]
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
     name="dvk-manga",
-    version="0.2.1",
+    version="0.2.5",
     author="Drakovek",
     author_email="DrakovekMail@gmail.com",
     description="Modules for downloading manga in the .dvk file format.",

@@ -314,6 +314,10 @@ class TestMangadex():
             rmtree(test_dir.absolute())
 
 
-if __name__ == "__main__":
+def main():
     test_mangadex = TestMangadex()
     test_mangadex.test_all()
+
+
+if __name__ == "__main__":
+    main()
