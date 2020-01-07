@@ -3,4 +3,5 @@ build*
 dist*
 dvk_manga.egg-info*
 dvk_manga/__pycache__*
-tests/__pycache__*
+dvk_manga/tests/__pycache__*
+__pycache__*

@@ -1,4 +1,3 @@
-import unittest
 from pathlib import Path
 from shutil import rmtree
 from dvk_archive.file.dvk import Dvk
@@ -12,14 +11,26 @@ from dvk_manga.mangadex import get_start_chapter
 from dvk_manga.mangadex import get_dvks
 
 
-class TestMangadex(unittest.TestCase):
+class TestMangadex():
     """
     Unit tests for the mangadex.py module.
     """
 
-    def test_get_title_num(self):
+    def test_all(self):
         """
-        Tests the get_title_num function.
+        Tests all functions of the mangadex.py module.
+        """
+        self.test_get_title_id()
+        self.test_get_id_from_tag()
+        self.test_get_downloaded_titles()
+        self.test_get_title_info()
+        self.test_get_chapters()
+        self.test_get_start_chapter()
+        self.test_get_dvks()
+
+    def test_get_title_id(self):
+        """
+        Tests the get_title_id function.
         """
         assert get_title_id() == ""
         assert get_title_id("www.differentsite.com") == ""
